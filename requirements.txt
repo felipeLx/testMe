@@ -1,0 +1,6 @@
+streamlit
+pyrebase4
+google-cloud-pubsub
+google-api-python-client
+streamlit-aggrid
+gsheetsdb

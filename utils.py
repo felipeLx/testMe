@@ -1,45 +1,51 @@
 import requests
-import tableauhyperapi as th
-
-API_LINK = 'https://api.mercadolibre.com/sites/MLA/search?q=chromecast#json'
-
-# defined the variable to be appended
-data = ''
-data = requests.get(API_LINK)
-transformedData = data.content
-
-
-# convert column with array of Dictionary to multiple columns with prefix
-def convert_df_to_hyper(df):
-    csv_file = df.to_csv('sellout.csv', sep=';', encoding='utf-8', header=True, decimal=',')
-    return csv_file
+from tableauhyperapi import HyperProcess, Telemetry, Connection, CreateMode, TableName, SqlType, TableDefinition, Inserter
+import pandas as pd
   
 # convert dataframe to hyper file
 def convert_attribute_column(df):
-    """
-    Convert the attribute column in the df DataFrame into multiple columns with the prefix `attribute-`.
-
-    Args:
-        df (DataFrame): The DataFrame to be converted.
-
-    Returns:
-        DataFrame: The converted DataFrame.
-    """
     # Define a function to extract attribute values from a list of dictionaries.
     def extract_attributes(row):
         attributes = row['attributes']
         for attribute_dict in attributes:
             for key, value in attribute_dict.items():
                 row['att-' + str(key)] = value
-                #att_values = row['att-values']
-                #for key, value in att_values:
-                    #row['att-vl-' + str(key)] = value
+            att_values = row['att-values']
+            if isinstance(att_values, dict):
+                for key, value in att_values.items():
+                    row['att-vl-' + str(key)] = value
+
         return row
 
     # Apply the function to each row of the DataFrame.
     df = df.apply(extract_attributes, axis=1)
-
-    # Drop the original attribute column.
-    df.drop('attributes', axis=1, inplace=True)
-
+    # Delete the 'attributes' and 'att-values' columns from the DataFrame.
+    #df = df.drop(['attributes', 'att-values'], axis=1)
+    
     return df
+
+def handle_hyper_file(df):
+    # Define the name of the Hyper file.
+    hyper_file = 'data.hyper'
+    
+    # Define the table schema.
+    table_name = TableName('public', 'Extract')
+    table_def = TableDefinition(table_name)
+    for col in df.columns:
+        table_def.add_column(col, SqlType.text())
+    
+    # Create a copy of the DataFrame with all columns converted to strings.
+    df = df.astype(str)
+    
+    # Create the Hyper file.
+    with HyperProcess(Telemetry.SEND_USAGE_DATA_TO_TABLEAU) as hyper:
+        with Connection(hyper.endpoint, hyper_file, CreateMode.CREATE_AND_REPLACE) as connection:
+            connection.catalog.create_table(table_def)
+            
+            # Insert the data into the Hyper file.
+            with Inserter(connection, table_def) as inserter:
+                for row in df.itertuples(index=False):
+                    inserter.add_row(row)
+                inserter.execute()
+    # Return the path to the Hyper file.
+    return hyper_file

@@ -41,5 +41,6 @@ if len(ml_data.df) != 0:
 
     # Check if the download button has been clicked.
     if st.session_state.download_clicked:
-        # Display an alert.
-        st.warning(f'Archivo {product_name}.hyper descargado con éxito! Verifique su carpeta de descargas.', icon="✅")
+        with st.container():
+            # Display an alert.
+            st.warning(f'Archivo {product_name}.hyper descargado con éxito! Verifique su carpeta de descargas.', icon="✅")

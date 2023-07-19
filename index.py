@@ -1,30 +1,28 @@
 import streamlit as st
 import pandas as pd
 import requests
-import tableauhyperapi as th
 from utils import convert_attribute_column
 
 #user input:
-_input = st.sidebar.text_input(label='Qual Produto você está buscando?')
-
+product_name = st.sidebar.text_input(label='Diga el producto que busca', placeholder='El Camino de Santiago')
+editable_product_name = str(product_name.upper())
+print(editable_product_name)
 #variables to function and data
 api_url = ''
 df = ''
 
-try:
-    api_url = 'https://api.mercadolibre.com/sites/MLA/search?q='+_input+'&limit=50#json'
-    data = requests.get(api_url)
-    transformedData = data.json()
-    # print(transformedData['results'])
-    df = pd.DataFrame(pd.json_normalize(transformedData['results']))
-    convert_attribute_column(df.copy())
-except:
-    st.warning('La busqueda no ha sido exitosa, intente otro producto.', icon="⚠️")
+if(len(product_name) > 2):
+    try:
+        api_url = 'https://api.mercadolibre.com/sites/MLA/search?q='+editable_product_name+'&limit=50#json'
+        data = requests.get(api_url)
+        transformedData = data.json()
+        df = pd.DataFrame(pd.json_normalize(transformedData['results']))
+        #print(df.columns)
+        df = convert_attribute_column(df)
+    except NameError:
+        st.warning('La busqueda no ha sido exitosa, intente otro producto.', icon="⚠️")
 
 # print dataframe
-print(len(df))
-
-# Main body view
 if len(df) == 0:
     st.write('''
              # Por favor, indique el producto que está buscando en el lateral
@@ -32,5 +30,7 @@ if len(df) == 0:
              ''', unsafe_allow_html=False)
 
 if len(df) != 0:
-    st.write(df) 
-
+    st.write('''
+             # Sigue los datos solicitados
+             ''', unsafe_allow_html=False)
+    st.write(df)

@@ -1,6 +1,7 @@
 import requests
+import tableauhyperapi as th
 
-API_LINK = 'https://api.mercadolibre.com/sites/MLA/search?q=chromecast&limit=50#json'
+API_LINK = 'https://api.mercadolibre.com/sites/MLA/search?q=chromecast#json'
 
 # defined the variable to be appended
 data = ''
@@ -24,16 +25,21 @@ def convert_attribute_column(df):
     Returns:
         DataFrame: The converted DataFrame.
     """
+    # Define a function to extract attribute values from a list of dictionaries.
+    def extract_attributes(row):
+        attributes = row['attributes']
+        for attribute_dict in attributes:
+            for key, value in attribute_dict.items():
+                row['att-' + str(key)] = value
+                #att_values = row['att-values']
+                #for key, value in att_values:
+                    #row['att-vl-' + str(key)] = value
+        return row
 
-    # Get the attribute column from the DataFrame.
-    attribute_column = df['attribute']
-
-    # Iterate over the attribute column and create new columns for each attribute.
-    for attribute in attribute_column:
-        new_column_name = 'attribute-' + attribute
-        df[new_column_name] = attribute
+    # Apply the function to each row of the DataFrame.
+    df = df.apply(extract_attributes, axis=1)
 
     # Drop the original attribute column.
-    df.drop('attribute', axis=1, inplace=True)
+    df.drop('attributes', axis=1, inplace=True)
 
     return df
